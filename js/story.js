@@ -55,6 +55,9 @@
       copyEl.style.left = c.left + 'px'; copyEl.style.width = c.copyW + 'px'; copyEl.style.maxHeight = (g.H - 84 - 80) + 'px';
       copyEl.style.top = Math.max(84, (g.H - copyEl.offsetHeight) / 2 - 10) + 'px';
     }
+    // Only scroll when the text is genuinely taller than its space (never for a tilted note).
+    copyEl.style.overflowY = 'visible';
+    copyEl.style.overflowY = copyEl.scrollHeight > parseFloat(copyEl.style.maxHeight) + 4 ? 'auto' : 'visible';
   }
   function vizRect() {
     var g = geo(), s = STEPS[st.i] || {}, mode = stepLayout();
@@ -174,9 +177,7 @@
     return out;
   }
   // A butt from behind: two round cheeks (the outline of two overlapping ovals) with a flat
-  // waistline across the top, plus a short pencil line for the cleft.
-  var cleft = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  cleft.setAttribute('class', 'axes fig off'); viz.appendChild(cleft);
+  // waistline across the top.
   function buttShape(R) {
     var g = geo(), c = R.copy, cx, cy, rx, ry;
     if (!g.phone && c) {
@@ -192,19 +193,13 @@
     var yCut = cy - notch + ry * 0.07, pts = [], n = 260, k, t;
     for (k = 0; k <= n; k++) { t = -phi + 2 * phi * k / n; pts.push([cx + d + rx * Math.cos(t), Math.max(yCut, cy + ry * Math.sin(t))]); }
     for (k = 1; k <= n; k++) { t = phi - 2 * phi * k / n; pts.push([cx - d - rx * Math.cos(t), Math.max(yCut, cy + ry * Math.sin(t))]); }
-    var cleftEnd = yCut + ry * 0.42;
-    if (c && !g.phone) cleftEnd = Math.max(yCut + 26, Math.min(cleftEnd, c.y - 16));
-    return { pts: pts, cx: cx, yCut: yCut, cleftEnd: cleftEnd };
+    return { pts: pts, cx: cx, yCut: yCut };
   }
   function showBum(R, o) {
     // On phones the outline is small, so keep the words readable and show fewer of them.
-    var shape = buttShape(R), placed = placeOnPath(BD, shape.pts, { start: 24, end: 24, seed: 9, sizes: geo().phone ? [14, 13] : null }), t = placed.targets;
+    var shape = buttShape(R), placed = placeOnPath(BD, shape.pts, { start: 6, end: 6, seed: 9, sizes: geo().phone ? [14, 13] : null }), t = placed.targets;
     placed.rest.forEach(function (w) { w.el.classList.add('hide'); });
     BD.forEach(function (w) { w.el.classList.remove('drift'); });
-    var gg = geo();
-    cleft.setAttribute('width', gg.W); cleft.setAttribute('height', gg.H);
-    cleft.innerHTML = '<path d="M' + shape.cx + ' ' + (shape.yCut + 4) + ' C ' + (shape.cx - 3) + ' ' + (shape.yCut + (shape.cleftEnd - shape.yCut) * 0.4) + ', ' + (shape.cx + 4) + ' ' + (shape.yCut + (shape.cleftEnd - shape.yCut) * 0.7) + ', ' + (shape.cx + 1) + ' ' + shape.cleftEnd + '" fill="none" stroke="#63291B" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>';
-    cleft.classList.remove('off');
     t.forEach(function (p, i) {
       var w = p[0];
       if (!bumShown && !o.relayout) {
@@ -216,7 +211,7 @@
     });
     bumShown = true;
   }
-  function hideBum() { BD.forEach(function (w) { w.el.classList.add('hide'); }); bumShown = false; cleft.classList.add('off'); }
+  function hideBum() { BD.forEach(function (w) { w.el.classList.add('hide'); }); bumShown = false; }
   var cloudOrder = WD.slice(), driftOrder = WD.slice();
   (function () { var r = seeded(7); cloudOrder.sort(function () { return r() - 0.5; }); var q = seeded(21); driftOrder.sort(function () { return q() - 0.5; }); })();
 

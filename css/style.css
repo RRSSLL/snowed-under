@@ -16,7 +16,7 @@ a{color:var(--blue)}a:hover{color:var(--terra)}
 #viz .live{pointer-events:auto}
 #title{position:fixed;inset:0;z-index:4;overflow:hidden;transition:opacity .5s ease}
 #title.out{opacity:0}
-#copy{position:fixed;z-index:3;overflow-y:auto;overscroll-behavior:contain;transition:opacity .25s ease}
+#copy{position:fixed;z-index:3;overscroll-behavior:contain;transition:opacity .25s ease}
 #copy.swap{opacity:0}
 
 /* Running head, chapter tabs, folio and page-turn buttons */
@@ -49,10 +49,8 @@ body.titlepage .runhead,body.titlepage .tabs,body.titlepage .foot,body.titlepage
 }
 
 /* Pages with the text in the middle */
-#copy.centered{text-align:center}
-#copy.centered .guess input[type=range],#copy.centered .guess .ends{margin-left:auto;margin-right:auto}
+#copy.centered{text-align:left}
 #copy.centered .guess input[type=range]{display:block}
-#copy.centered .note{transform:rotate(-2deg)}
 #copy .kbd-hint{display:none;margin:10px 0 0;font-size:15px;font-style:italic;color:var(--sec)}
 @media (hover:hover) and (pointer:fine){#copy .kbd-hint{display:block}}
 
@@ -140,8 +138,8 @@ body.titlepage .runhead,body.titlepage .tabs,body.titlepage .foot,body.titlepage
 /* Chart: points that become bars */
 .wp{position:absolute;left:0;top:0;transition:transform var(--t) var(--ease),opacity .6s ease}
 .wp .mk{position:absolute;left:0;top:0;width:9px;height:9px;border-radius:50%;background:var(--blue2);transform:translate(-4.5px,-4.5px);transition:width var(--t) var(--ease),height var(--t) var(--ease),border-radius var(--t) var(--ease),transform var(--t) var(--ease),background-color .6s ease,opacity .6s ease}
-.wp .nm{position:absolute;right:100%;top:0;transform:translateY(-50%);margin-right:8px;white-space:nowrap;font-style:italic;font-size:14px;line-height:1;transition:opacity .5s ease}
-.wp .vl{position:absolute;left:0;top:0;transform:translateY(-50%);white-space:nowrap;font-size:12.5px;line-height:1;color:var(--sec);font-variant-numeric:lining-nums tabular-nums;transition:opacity .5s ease,left var(--t) var(--ease)}
+.wp .nm{position:absolute;right:100%;top:0;transform:translateY(calc(-50% - .14em));margin-right:8px;white-space:nowrap;font-style:italic;font-size:14px;line-height:1;transition:opacity .5s ease}
+.wp .vl{position:absolute;left:0;top:0;transform:translateY(calc(-50% - .03em));white-space:nowrap;font-size:12.5px;line-height:1;color:var(--sec);font-variant-numeric:lining-nums tabular-nums;transition:opacity .5s ease,left var(--t) var(--ease)}
 .wp .vl .m{color:var(--blue);margin-left:6px}
 .wp .chk{color:var(--blue);font-style:normal;font-size:12px;margin-left:3px}
 .wp .sl{font-style:italic;color:var(--terra);font-size:12px;margin-left:3px}
