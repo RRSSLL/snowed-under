@@ -41,10 +41,9 @@ window.SNOW_DATA = {
     { w: 'get', s: 772 }
   ],
 
-  // Page 8's comparison word: man, from Moby's standard entry (306 synonyms). It isn't in the
-  // top 25, so it doesn't spoil Chapter II. Its 9 meanings, most synonyms first; the last group
-  // (14) is "other / hard to place".
-  compare: { w: 'man', meanings: 9, synonyms: 306, groups: [64, 42, 41, 38, 37, 26, 25, 10, 9], other: 14 },
+  // Page 8's comparison word: rank (741 synonyms, 13 meanings, per Ryan). No per-meaning split
+  // was supplied, so its dots are drawn in one color.
+  compare: { w: 'rank', meanings: 13, synonyms: 741 },
 
   // Mild synonyms of buttocks for the afterword (from the slang doc's examples).
   buttocks: ['bottom', 'behind', 'backside', 'rear end', 'derriere', 'posterior', 'rump', 'tail end', 'hindquarters', 'haunches', 'hind end', 'seat', 'bum', 'booty', 'buns', 'caboose', 'keister', 'can', 'duff', 'trunk', 'junk in the trunk', 'badonkadonk', 'jacksie', 'bahookie', 'tush', 'tushie', 'tuchis', 'heinie', 'sit-upon', 'gluteus maximus'],

@@ -180,8 +180,9 @@ window.Title = (function () {
     // Start deep enough that the snowman's shape is below the drift too.
     c.y0 = H + bookH * 1.02 + 30 + c.ch / 2;
     c.yF = Math.max(c.ch / 2 + bookH + 46, H * 0.5);
-    var carryTop = Math.max(c.yF - c.ch / 2, Math.min(Math.max(bookH, driftH * 1.1) + 40, H - c.ch - 16));
-    c.yC = carryTop + c.ch / 2;
+    // Rise straight to the final spot, so the card doesn't move again after the push. On short
+    // screens the top of the pile can sit above the screen; the snowman pushes it off all the same.
+    c.yC = c.yF;
     c.y = c.y0;
     S.plow.y = c.y0 - c.ch / 2 - GROUND * s;
     Matter.Body.setPosition(c.body, { x: W / 2, y: c.y }, false);
@@ -242,12 +243,13 @@ window.Title = (function () {
     } else if (S.phase === 'shed') {
       hold();
       if (t - S.tPhase >= 800) {
-        // Safety net: fade out any word that is somehow still in view.
+        // Safety net: fade out any word still in view, or above the screen where it could fall back in.
         S.items.forEach(function (it) {
           var bb = it.body && it.body.bounds;
-          if (bb && bb.max.x > 0 && bb.min.x < S.W && bb.max.y > 0 && bb.min.y < S.H) removeWord(it, true);
+          if (bb && bb.max.x > 0 && bb.min.x < S.W && bb.min.y < S.H) removeWord(it, true);
         });
-        S.phase = 'settle'; S.tPhase = t; S.settleFrom = c.y;
+        if (Math.abs(c.yF - c.y) < 1) { S.phase = 'done'; S.doneAt = t; }
+        else { S.phase = 'settle'; S.tPhase = t; S.settleFrom = c.y; }
       }
     } else if (S.phase === 'settle') {
       var u = Math.min(1, (t - S.tPhase) / 700);

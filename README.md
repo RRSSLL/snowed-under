@@ -6,14 +6,14 @@ Live at **https://rrssll.github.io/snowed-under/**
 
 ## How it's built
 
-Plain HTML, CSS and JavaScript, with no build step, so GitHub Pages serves it as is.
+Plain HTML, CSS, and JavaScript, with no build step, so GitHub Pages serves it as is.
 
 - `index.html`: the page frame and the title-page artwork
 - `css/style.css`: the encyclopedia look (EB Garamond, Caveat, cream page, rosewood ink)
 - `js/data.js`: every number in the story
 - `js/sky.js`: the canvas of falling flakes, the sky of dots, and the dot grids
 - `js/title.js`: the title page, where the snowman clears the words (uses [Matter.js](https://brm.io/matter-js/))
-- `js/story.js`: the 19 pages, their copy, the quizzes and navigation
+- `js/story.js`: the 19 pages, their copy, the quizzes, and navigation
 
 Add `#p` and a page number to the address (for example `#p13`) to open a specific page.
 

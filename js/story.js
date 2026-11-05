@@ -355,7 +355,7 @@
   var fig2a = el('div', 'figlabel fig off', '<b>snow</b> <span>4 meanings · 29 synonyms</span>');
   var CMP = D.compare;
   var fig2b = el('div', 'figlabel fig off', '<b>' + CMP.w + '</b> <span>' + CMP.meanings + ' meanings · ' + fmt(CMP.synonyms) + ' synonyms</span>');
-  var fig2c = el('div', 'caption fig off', 'Fig. 2. One dot for every synonym. The colors mark meanings; gray ones are hard to place.');
+  var fig2c = el('div', 'caption fig off', 'Fig. 2. One dot for every synonym. Snow’s colors mark its four meanings.');
   [fig2a, fig2b, fig2c].forEach(function (e) { viz.appendChild(e); });
   function showFig2(R) {
     var pitch = geo().phone ? 8 : 9, dot = pitch - 2, gw = Math.min(R.w, 420), cols = Math.floor(gw / pitch);
@@ -367,7 +367,8 @@
     var by = rowY + 26;
     fig2b.style.left = x + 'px'; fig2b.style.top = by + 'px';
     var gy = by + 34;
-    var groups = CMP.groups.concat([CMP.other]), colors = CMP.groups.map(function (g, i) { return [1, 3, 4, 0][i % 4]; }).concat([5]);
+    var groups = CMP.groups ? CMP.groups.concat(CMP.other ? [CMP.other] : []) : [CMP.synonyms];
+    var colors = CMP.groups ? CMP.groups.map(function (g, i) { return [1, 3, 4, 0][i % 4]; }).concat(CMP.other ? [5] : []) : [1];
     var o = { rect: { x: x + dot / 2, y: gy, w: gw }, groups: groups, pitch: pitch, dot: dot, colors: colors };
     Sky.set('grid', o);
     fig2c.style.left = x + 'px'; fig2c.style.top = (gy + (o.height || 180) + 8) + 'px'; fig2c.style.width = gw + 'px';
@@ -459,8 +460,9 @@
     var labelW = g.phone ? 80 : 104, valW = o.meanings ? 92 : 50;
     var x0 = R.x + labelW, barMax = R.w - labelW - valW;
     var rows = list.length + 1.6 + (o.meanings ? 0.8 : 0), pitch = Math.min(g.phone ? 17 : 22, (R.h - capH - 10) / rows), barH = Math.max(4, pitch * 0.62);
+    var chartH = rows * pitch + capH + 10, top = R.y + Math.max(0, (R.h - chartH) / 2);
     var fs = Math.max(8, Math.min(14, pitch * 0.84));
-    var y0 = R.y + (o.meanings ? Math.max(14, pitch) : 4) + pitch / 2;
+    var y0 = top + (o.meanings ? Math.max(14, pitch) : 4) + pitch / 2;
     var inList = {};
     list.forEach(function (d, i) {
       inList[d.w] = true;
@@ -483,7 +485,7 @@
     wpPlace(sp, x0, syy, { w: sbw, h: barH, r: '1px', t: 'translate(0,' + (-barH / 2) + 'px)' });
     if (o.dimAll) sp.el.classList.add('dim');
     if (o.meanings) {
-      mnHead.style.left = (R.x + R.w - 60) + 'px'; mnHead.style.top = (R.y - 2) + 'px'; mnHead.style.width = '60px'; mnHead.style.textAlign = 'right';
+      mnHead.style.left = (R.x + R.w - 60) + 'px'; mnHead.style.top = (top - 2) + 'px'; mnHead.style.width = '60px'; mnHead.style.textAlign = 'right';
       mnHead.classList.remove('off');
     }
     chartCap.style.left = R.x + 'px'; chartCap.style.top = (syy + pitch * 0.8) + 'px';
@@ -576,7 +578,7 @@
   // ---------- Steps ----------
   var HEADS = { 0: 'preface', 1: 'chapter i · meanings', 2: 'chapter ii · the winners', 3: 'chapter iii · slang', 4: 'afterword', 5: 'colophon' };
   var STEPS = [
-    { ch: 0, center: true, copy: function () { return '<p class="lead">People often say that the Inuit have 70 words for snow.</p><p>Contested as this claim may be, it’s meant to convey that languages have more synonyms for things that are pervasive in their culture.</p>'; },
+    { ch: 0, center: true, copy: function () { return '<p class="lead">People often say the Inuit have 70 words for snow.</p><p>Contested as this claim may be, it’s meant to express that languages have more synonyms for things that are more pervasive in their culture.</p>'; },
       vis: function (R) { Sky.set('flurry', { count: 140 }); setWords('off'); setChart('off'); } },
     { ch: 0, center: true, copy: function () { return '<p class="lead">English has 29 of its own.</p><p>If we set aside snow’s slang meaning.</p>'; },
       vis: function (R, o) { Sky.set('flurry', { count: 140 }); setWords('around', R, o); setChart('off'); } },
@@ -610,7 +612,7 @@
         return '<p class="lead">Just 4.</p><p>A fall of snow, coming down thickly, TV static, and a <i>snow job</i>. That last one, fooling someone, brings 18 of the 29 synonyms on its own.</p>' + n;
       },
       vis: function (R, o) { Sky.set('off'); hideFig2(); showSenses(true); setWords('senses', R, o); setChart('off'); } },
-    { ch: 1, vw: 460, copy: function () { return '<p class="lead">More meanings, more synonyms.</p><p><i>Man</i> has 9 meanings, from a person to a game piece to crewing a ship. Between them, they hold 306 synonyms.</p>'; },
+    { ch: 1, vw: 460, copy: function () { return '<p class="lead">More meanings, more synonyms.</p><p><i>Rank</i> has 13 meanings, from a row of soldiers to a foul smell to a place in society. Between them, they hold 741 synonyms.</p>'; },
       vis: function (R) { showSenses(false); showFig2(R); setChart('off'); } },
     { ch: 1, vw: 620, copy: function () { return '<p class="lead">Snow isn’t anywhere near the top.</p><p>Here it is with the 25 English words that have the most synonyms.</p>'; },
       vis: function (R) {
@@ -649,7 +651,7 @@
       } },
     { ch: 2, vw: 640, copy: function () {
         var n = foundCount(), f = n === 25 ? ' You found all 25!' : n ? ' You found ' + n + ' of them.' : '';
-        return '<p class="lead"><i>Cut</i> takes it, with 1,262.</p><p><i>Set</i>, <i>turn</i>, <i>run</i> and <i>break</i> round out the top five.' + f + '</p>';
+        return '<p class="lead"><i>Cut</i> takes it, with 1,262.</p><p><i>Set</i>, <i>turn</i>, <i>run</i>, and <i>break</i> round out the top five.' + f + '</p>';
       },
       vis: function (R, o) {
         Sky.set('off'); setWords('off'); slots.classList.add('off');
@@ -672,13 +674,13 @@
         pairsEl.classList.toggle('compact', R.h < 400);
         pairsEl.classList.remove('off');
       } },
-    { ch: 3, vw: 640, copy: function () { return '<p class="lead">Slang turns the list upside down.</p><p><i>Money</i> leads with 3,342 synonyms, and 15 of the top 25 are new. <i>Cut</i> drops to ninth.</p>'; },
+    { ch: 3, vw: 640, copy: function () { return '<p class="lead">Slang terms dominate the list.</p><p><i>Money</i> leads with 3,342 synonyms, and 15 of the top 25 are new. <i>Cut</i> drops to ninth.</p>'; },
       vis: function (R) { Sky.set('off'); setWords('off'); pairsEl.classList.add('off'); setChart('bars', R, { list: D.slangTop, max: 3342, snow: 125, grow: true, slLabel: true, caption: 'Fig. 5. The top 25 with slang counted. sl. = new with slang' }); } },
-    { ch: 3, vw: 640, copy: function () { return '<p class="lead">Look at what dominates.</p><p>Money, women, drink, fools, men and sex take the top six places. Most of the other new arrivals are about bodies and sex, plus the police, death and madness.</p>'; },
+    { ch: 3, vw: 640, copy: function () { return '<p class="lead">Look at what’s new.</p><p>Money, women, drink, fools, men, and sex take the top six places. Most of the other new arrivals are about bodies and sex, plus the police, death, and madness.</p>'; },
       vis: function (R) { Sky.set('off'); setWords('off'); pairsEl.classList.add('off'); setChart('bars', R, { list: D.slangTop, max: 3342, snow: 125, slLabel: true, highlight: function (d) { return d.sl; }, caption: 'Fig. 5. The top 25 with slang counted' }); } },
     { ch: 4, vw: 640, copy: function () { return '<p class="lead">What we have the most words for says something about us.</p><p>We keep inventing new ways to talk about the things we’d rather not say plainly but can’t stop talking about.</p>'; },
       vis: function (R) { Sky.set('flurry', { count: 90 }); setWords('off'); pairsEl.classList.add('off'); setChart('bars', R, { list: D.slangTop, max: 3342, snow: 125, dimAll: true }); } },
-    { ch: 4, center: 'desktop', copyDy: 30, copy: function () { return '<p class="lead">So, do the Inuit have 70 words for snow?</p><p>It depends on what counts as a word. Inuit languages build words by adding pieces to a root, so one root can grow into dozens of them. The better question may be what does a language keep finding new ways to say? In English, it isn’t snow.</p>'; },
+    { ch: 4, center: 'desktop', copyDy: 30, copy: function () { return '<p class="lead">So, do the Inuit have 70 words for snow?</p><p>It depends on what counts as a word. Inuit languages build words by adding pieces to a root, so one root can grow into dozens of them. The better question may be what do other languages keep finding new ways to say? In English, it isn’t snow.</p>'; },
       vis: function (R, o) { Sky.set('flurry', { count: 220 }); setChart('off'); setWords('off'); showBum(R, o); } },
     { ch: 5, copy: function () {
         return '<h2>Colophon</h2><p><i>Snowed Under</i>, by Ryan.</p>' +
