@@ -2,7 +2,7 @@
 // (sky, snow's word-dots, the chart, the quizzes), so moving forward or back always lands cleanly.
 (function () {
   var D = window.SNOW_DATA;
-  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var reduce = false;   // Ryan's call: everyone gets the full animations, even with Reduce Motion on.
   function $(s) { return document.querySelector(s); }
   function fmt(n) { return n.toLocaleString('en-US'); }
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }

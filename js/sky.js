@@ -2,7 +2,7 @@
 window.Sky = (function () {
   var cv = document.getElementById('sky');
   var ctx = cv.getContext('2d');
-  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var reduce = false;   // Ryan's call: everyone gets the full animations, even with Reduce Motion on.
   var INK = ['#63291B', '#436C66', '#88432C', '#8B9576', '#B89F78', '#BDB3A6'];
   var MAX = 20000;
   var x = new Float32Array(MAX), y = new Float32Array(MAX), sx = new Float32Array(MAX), sy = new Float32Array(MAX);

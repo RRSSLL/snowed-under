@@ -19,7 +19,7 @@ window.Title = (function () {
   var cardEl = document.getElementById('tcard');
   var plowEl = document.getElementById('plow');
   var promptEl = stage.querySelector('.tprompt');
-  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var reduce = false;   // Ryan's call: everyone gets the full animations, even with Reduce Motion on.
   var S = null, rafId = 0, onDone = null, fastForward = false;
 
   // Six-armed snowflake ornament for the title card.
