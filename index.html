@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Snowed Under</title>
+<meta name="description" content="Which English words have piled up synonyms? An interactive story by Ryan.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+<div id="viz" aria-hidden="true"></div>
+
+<!-- The title page (step 4): card, snowman, and the words he clears away -->
+<div id="title" hidden>
+  <div class="card" id="tcard">
+    <svg class="flake" viewBox="0 0 30 30" aria-hidden="true"><path id="flake" fill="none" stroke="#63291B" stroke-width="1.6" stroke-linecap="round"/></svg>
+    <h1><span>Snowed</span> <span>Under</span></h1>
+    <div class="rule" aria-hidden="true"></div>
+    <p class="sub">Which English words have piled up synonyms</p>
+    <p class="by">by Ryan</p>
+    <p class="tprompt">tap to turn the page</p>
+  </div>
+  <!-- Ground line is y=200 in this drawing; the thesaurus spine (x 112–170) is his plow blade. -->
+  <svg id="plow" viewBox="0 0 176 204" aria-hidden="true">
+    <g fill="none" stroke="#6E4A38" stroke-width="1.6">
+      <circle class="puff" cx="26" cy="194" r="5"/>
+      <circle class="puff b" cx="14" cy="190" r="4"/>
+      <circle class="puff c" cx="32" cy="186" r="3.5"/>
+    </g>
+    <g class="snowman">
+      <g transform="rotate(7 62 200)">
+        <path class="scarf-end" d="M60 104 C48 104 38 100 28 103 L30 111 C40 109 50 112 61 112 Z" fill="#88432C" stroke="#63291B" stroke-width="1.6" stroke-linejoin="round"/>
+        <path class="scarf-end two" d="M60 109 C50 112 42 116 33 118 L36 125 C45 122 53 119 62 116 Z" fill="#88432C" stroke="#63291B" stroke-width="1.6" stroke-linejoin="round"/>
+        <circle cx="62" cy="170" r="30" fill="#FBF7EE" stroke="#63291B" stroke-width="2.4"/>
+        <circle cx="66" cy="125" r="21" fill="#FBF7EE" stroke="#63291B" stroke-width="2.4"/>
+        <circle cx="70" cy="91" r="16" fill="#FBF7EE" stroke="#63291B" stroke-width="2.4"/>
+        <path d="M54 103 C62 111 78 111 86 103 L87 110 C78 118 62 118 53 110 Z" fill="#88432C" stroke="#63291B" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M55 81 C54 63 86 61 86 81 Z" fill="#3A5F59" stroke="#63291B" stroke-width="1.8" stroke-linejoin="round"/>
+        <rect x="53" y="76" width="35" height="7" rx="2" fill="#3A5F59" stroke="#63291B" stroke-width="1.8"/>
+        <circle cx="71" cy="60" r="5" fill="#F0E7D5" stroke="#63291B" stroke-width="1.6"/>
+        <circle cx="73" cy="89" r="2" fill="#63291B"/>
+        <circle cx="81" cy="89" r="2" fill="#63291B"/>
+        <path d="M84 92.5 L97 94.5 L84 97 Z" fill="#88432C" stroke="#63291B" stroke-width="1.2" stroke-linejoin="round"/>
+        <circle cx="74" cy="98.5" r="1.1" fill="#63291B"/><circle cx="78" cy="100" r="1.1" fill="#63291B"/><circle cx="82" cy="98.5" r="1.1" fill="#63291B"/>
+        <circle cx="71" cy="121" r="2.2" fill="#63291B"/><circle cx="72" cy="133" r="2.2" fill="#63291B"/>
+        <circle cx="68" cy="158" r="2.4" fill="#63291B"/>
+      </g>
+      <g fill="none" stroke="#63291B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M84 120 L112 112 M106 108 L112 112 L107 117"/>
+        <path d="M82 134 L112 136 M107 131 L112 136 L107 140"/>
+      </g>
+    </g>
+    <g>
+      <rect x="112" y="4" width="58" height="196" rx="4" fill="#63291B" stroke="#4A1E14" stroke-width="2"/>
+      <rect x="112" y="16" width="58" height="3" fill="#DCC9A9"/>
+      <rect x="112" y="24" width="58" height="3" fill="#DCC9A9"/>
+      <rect x="112" y="177" width="58" height="3" fill="#DCC9A9"/>
+      <rect x="112" y="185" width="58" height="3" fill="#DCC9A9"/>
+      <rect x="120" y="40" width="42" height="124" rx="2" fill="#88432C" stroke="#DCC9A9" stroke-width="1.4"/>
+      <text x="141" y="102" transform="rotate(90 141 102)" text-anchor="middle" dominant-baseline="central" fill="#F0E7D5" font-family="'EB Garamond', Georgia, serif" font-weight="600" font-size="15" letter-spacing="2.6">THESAURUS</text>
+    </g>
+  </svg>
+</div>
+
+<header class="runhead" id="runhead">
+  <span class="rh-left">snowed under</span>
+  <span class="rh-right" id="rhRight"></span>
+</header>
+<nav class="tabs" id="tabs" aria-label="Chapters">
+  <button type="button" data-ch="1" aria-label="Chapter I: meanings">I</button>
+  <button type="button" data-ch="2" aria-label="Chapter II: the winners">II</button>
+  <button type="button" data-ch="3" aria-label="Chapter III: slang">III</button>
+</nav>
+
+<main id="copy" aria-live="polite"></main>
+
+<footer class="foot" id="foot">
+  <button type="button" class="navbtn" id="back">‹ back</button>
+  <span class="folio" id="folio"></span>
+  <button type="button" class="navbtn" id="next">next ›</button>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/sky.js"></script>
+<script src="js/title.js"></script>
+<script src="js/story.js"></script>
+</body>
+</html>
