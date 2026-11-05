@@ -355,7 +355,7 @@
   var fig2a = el('div', 'figlabel fig off', '<b>snow</b> <span>4 meanings · 29 synonyms</span>');
   var CMP = D.compare;
   var fig2b = el('div', 'figlabel fig off', '<b>' + CMP.w + '</b> <span>' + CMP.meanings + ' meanings · ' + fmt(CMP.synonyms) + ' synonyms</span>');
-  var fig2c = el('div', 'caption fig off', 'Fig. 2. One dot for every synonym. Snow’s colors mark its four meanings.');
+  var fig2c = el('div', 'caption fig off', 'Fig. 2. One dot for every synonym. The colors mark meanings; gray ones are hard to place.');
   [fig2a, fig2b, fig2c].forEach(function (e) { viz.appendChild(e); });
   function showFig2(R) {
     var pitch = geo().phone ? 8 : 9, dot = pitch - 2, gw = Math.min(R.w, 420), cols = Math.floor(gw / pitch);
@@ -612,7 +612,7 @@
         return '<p class="lead">Just 4.</p><p>A fall of snow, coming down thickly, TV static, and a <i>snow job</i>. That last one, fooling someone, brings 18 of the 29 synonyms on its own.</p>' + n;
       },
       vis: function (R, o) { Sky.set('off'); hideFig2(); showSenses(true); setWords('senses', R, o); setChart('off'); } },
-    { ch: 1, vw: 460, copy: function () { return '<p class="lead">More meanings, more synonyms.</p><p><i>Rank</i> has 13 meanings, from a row of soldiers to a foul smell to a place in society. Between them, they hold 741 synonyms.</p>'; },
+    { ch: 1, vw: 460, copy: function () { return '<p class="lead">More meanings, more synonyms.</p><p><i>Man</i> has 9 meanings, from a person to a game piece to crewing a ship. Between them, they hold 306 synonyms.</p>'; },
       vis: function (R) { showSenses(false); showFig2(R); setChart('off'); } },
     { ch: 1, vw: 620, copy: function () { return '<p class="lead">Snow isn’t anywhere near the top.</p><p>Here it is with the 25 English words that have the most synonyms.</p>'; },
       vis: function (R) {
