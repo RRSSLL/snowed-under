@@ -55,7 +55,7 @@ window.SNOW_DATA = {
     { slang: 'three sheets to the wind', word: 'drunk' },
     { slang: 'numpty', word: 'fool' },
     { slang: 'sheila', word: 'woman' },
-    { slang: 'bloke', word: 'man' },
-    { slang: "devil's dandruff", word: 'cocaine' }
+    { slang: 'trouble and strife', word: 'wife' },
+    { slang: 'yayo', word: 'cocaine' }
   ]
 };
