@@ -48,6 +48,14 @@ body.titlepage .runhead,body.titlepage .tabs,body.titlepage .foot,body.titlepage
   .foot{padding:0 40px 10px;height:64px}
 }
 
+/* Pages with the text in the middle */
+#copy.centered{text-align:center}
+#copy.centered .guess input[type=range],#copy.centered .guess .ends{margin-left:auto;margin-right:auto}
+#copy.centered .guess input[type=range]{display:block}
+#copy.centered .note{transform:rotate(-2deg)}
+#copy .kbd-hint{display:none;margin:10px 0 0;font-size:15px;font-style:italic;color:var(--sec)}
+@media (hover:hover) and (pointer:fine){#copy .kbd-hint{display:block}}
+
 /* Buttons used in the quizzes */
 .btn{display:inline-block;border:1.5px solid var(--ink);background:var(--page);color:var(--ink);padding:8px 16px 9px;border-radius:2px;font-size:17px;font-variant-caps:small-caps;letter-spacing:.08em;cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
 .btn:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink)}

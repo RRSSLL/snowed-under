@@ -23,26 +23,115 @@
 
   // ---------- Geometry ----------
   function geo() { var W = innerWidth, H = innerHeight; return { W: W, H: H, phone: W < 760 }; }
+  // Three page layouts: 'center' (text in the middle of the page, figures around it),
+  // 'cols' (desktop: text column and figure side by side, centered as a pair) and
+  // 'phone' (text on top, figure below).
+  var GAP = 72;
+  function stepLayout() {
+    var s = STEPS[st.i] || {}, g = geo();
+    if (s.center && !(g.phone && s.center === 'desktop')) return 'center';
+    return g.phone ? 'phone' : 'cols';
+  }
+  function colGeom(g, s) {
+    var cw = Math.min(380, g.W * 0.3);
+    var vw = s.vw ? Math.min(s.vw, g.W - cw - GAP - 160) : 0;
+    var total = cw + (vw ? GAP + vw : 0), left = Math.max(64, (g.W - total) / 2);
+    return { left: left, copyW: cw, vx: left + cw + GAP, vw: vw };
+  }
   function placeCopy() {
-    var g = geo();
-    if (g.phone) {
+    var g = geo(), s = STEPS[st.i] || {}, mode = stepLayout();
+    copyEl.classList.toggle('centered', mode === 'center');
+    if (mode === 'center') {
+      var w = g.phone ? g.W - 56 : Math.min(540, g.W * 0.42);
+      var top0 = g.phone ? 56 : 80, bot = g.H - (g.phone ? 64 : 80);
+      copyEl.style.width = w + 'px'; copyEl.style.left = ((g.W - w) / 2) + 'px';
+      copyEl.style.maxHeight = (bot - top0) + 'px';
+      copyEl.style.top = Math.max(top0, top0 + (bot - top0 - copyEl.offsetHeight) / 2 + (g.phone ? 0 : (s.copyDy || 0))) + 'px';
+    } else if (mode === 'phone') {
       copyEl.style.left = '24px'; copyEl.style.top = '56px'; copyEl.style.width = (g.W - 24 - 40) + 'px';
       copyEl.style.maxHeight = (g.H - 56 - 66) + 'px';
     } else {
-      var w = Math.min(400, g.W * 0.34);
-      copyEl.style.left = '64px'; copyEl.style.width = w + 'px'; copyEl.style.maxHeight = (g.H - 84 - 80) + 'px';
+      var c = colGeom(g, s);
+      copyEl.style.left = c.left + 'px'; copyEl.style.width = c.copyW + 'px'; copyEl.style.maxHeight = (g.H - 84 - 80) + 'px';
       copyEl.style.top = Math.max(84, (g.H - copyEl.offsetHeight) / 2 - 10) + 'px';
     }
   }
   function vizRect() {
-    var g = geo();
-    if (g.phone) {
-      var c = copyEl.getBoundingClientRect();
+    var g = geo(), s = STEPS[st.i] || {}, mode = stepLayout();
+    var c = copyEl.getBoundingClientRect();
+    if (mode === 'center') {
+      var x = g.phone ? 20 : 64, y = g.phone ? 52 : 70;
+      return { x: x, y: y, w: g.W - x - (g.phone ? 30 : 80), h: g.H - y - (g.phone ? 62 : 76),
+        copy: { x: c.left, y: c.top, w: c.width, h: c.height } };
+    }
+    if (mode === 'phone') {
       var top = Math.max(c.bottom + 16, g.H * 0.24);
       return { x: 24, y: top, w: g.W - 24 - 36, h: g.H - 64 - top };
     }
-    var x = 64 + Math.min(400, g.W * 0.34) + 64;
-    return { x: x, y: 84, w: g.W - 80 - x, h: g.H - 84 - 80 };
+    var cg = colGeom(g, s);
+    return { x: cg.vx, y: 84, w: cg.vw, h: g.H - 84 - 80 };
+  }
+
+  // ---------- Placing words along a path (a ring around the text, or a butt) ----------
+  function pathLengths(pts) {
+    var L = [0];
+    for (var i = 1; i < pts.length; i++) L.push(L[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    return L;
+  }
+  function pointAt(pts, L, s) {
+    var lo = 0, hi = L.length - 1;
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (L[mid] < s) lo = mid; else hi = mid; }
+    var seg = (L[hi] - L[lo]) || 1, f = (s - L[lo]) / seg;
+    return { x: pts[lo][0] + (pts[hi][0] - pts[lo][0]) * f, y: pts[lo][1] + (pts[hi][1] - pts[lo][1]) * f,
+      a: Math.atan2(pts[hi][1] - pts[lo][1], pts[hi][0] - pts[lo][0]) };
+  }
+  // Spaces upright words evenly along the path, shrinking them if they don't fit. Words that
+  // still don't fit at the smallest size are left out (returned in `rest`).
+  function placeOnPath(list, pts, o) {
+    o = o || {};
+    var L = pathLengths(pts), P = L[L.length - 1], start = o.start || 0, end = P - (o.end || 0);
+    function foot(w, a) { var lh = curSize * 1.25; return Math.abs(w.lw * Math.cos(a)) + Math.abs(lh * Math.sin(a)); }
+    function greedy(gap) {
+      var sPos = start, out = [];
+      for (var i = 0; i < list.length; i++) {
+        var w = list[i], f = foot(w, pointAt(pts, L, sPos + 10).a);
+        var c = sPos + f / 2;
+        f = foot(w, pointAt(pts, L, Math.min(c, P)).a); c = sPos + f / 2;
+        if (sPos + f > end) break;
+        out.push([w, c]); sPos += f + gap;
+      }
+      return { out: out, used: sPos };
+    }
+    var sizes = o.sizes || sizesToTry(), res;
+    for (var si = 0; si < sizes.length; si++) { wordSize(sizes[si]); res = greedy(10); if (res.out.length === list.length) break; }
+    var n = res.out.length, slack = n ? Math.max(0, (end - res.used) / n) : 0;
+    res = greedy(10 + slack);
+    var r = seeded(o.seed || 1), lh = curSize * 1.25;
+    var targets = res.out.map(function (p) {
+      var pt = pointAt(pts, L, p[1]), j = o.jitter ? (r() - 0.5) * 2 * o.jitter : 0;
+      var nx = -Math.sin(pt.a), ny = Math.cos(pt.a);
+      return [p[0], pt.x + nx * j - p[0].lw / 2, pt.y + ny * j - lh / 2];
+    });
+    return { targets: targets, rest: list.slice(n) };
+  }
+  function ellipsePts(cx, cy, a, b, n) {
+    var pts = [];
+    for (var k = 0; k <= n; k++) { var t = -Math.PI / 2 + 2 * Math.PI * k / n; pts.push([cx + a * Math.cos(t), cy + b * Math.sin(t)]); }
+    return pts;
+  }
+  // Snow's words around centered text: an oval on desktop, above and below the text on phones.
+  function aroundLayout(list, R, seed) {
+    var c = R.copy, g = geo();
+    if (g.phone) {
+      var above = { x: R.x, y: R.y, w: R.w, h: Math.max(0, c.y - 16 - R.y) };
+      var by = c.y + c.h + 16, below = { x: R.x, y: by, w: R.w, h: Math.max(0, R.y + R.h - by) };
+      var nA = Math.round(list.length * above.h / Math.max(1, above.h + below.h));
+      return { targets: driftLayout(list.slice(0, nA), above, seed).concat(driftLayout(list.slice(nA), below, seed + 1)), rest: [] };
+    }
+    var cx = c.x + c.w / 2, cy = Math.min(Math.max(c.y + c.h / 2, R.y + R.h / 2 - 40), R.y + R.h / 2 + 40);
+    var a = Math.min(R.w / 2 - 70, c.w / 2 + 210);
+    var b = Math.max(c.h / 2 + 46, Math.min(Math.min(cy - R.y, R.y + R.h - cy) - 22, c.h / 2 + 150));
+    return placeOnPath(list, ellipsePts(cx, cy, a, b, 480), { jitter: 14, seed: seed });
   }
 
   // ---------- Snow's 29 word-dots ----------
@@ -84,8 +173,38 @@
     });
     return out;
   }
+  // A butt from behind: two round cheeks (the outline of two overlapping ovals) with a flat
+  // waistline across the top, plus a short pencil line for the cleft.
+  var cleft = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  cleft.setAttribute('class', 'axes fig off'); viz.appendChild(cleft);
+  function buttShape(R) {
+    var g = geo(), c = R.copy, cx, cy, rx, ry;
+    if (!g.phone && c) {
+      cx = c.x + c.w / 2; cy = R.y + R.h / 2;
+      ry = Math.min(R.h / 2 - 18, 340); rx = Math.min((R.w - 40) / 3.4, ry * 0.95, 330);
+      ry = Math.min(ry, rx * 1.05);
+    } else {
+      cx = R.x + R.w / 2; cy = R.y + R.h * 0.45;
+      rx = Math.min((R.w - 12) / 3.4, (R.h - 24) / 2 / 1.15); ry = Math.min((R.h - 24) / 2, rx * 1.15);
+    }
+    // Cheeks overlap less than ovals usually would, so the crease at the bottom shows.
+    var d = rx * 0.7, phi = Math.acos(-d / rx), notch = ry * Math.sqrt(1 - (d / rx) * (d / rx));
+    var yCut = cy - notch + ry * 0.07, pts = [], n = 260, k, t;
+    for (k = 0; k <= n; k++) { t = -phi + 2 * phi * k / n; pts.push([cx + d + rx * Math.cos(t), Math.max(yCut, cy + ry * Math.sin(t))]); }
+    for (k = 1; k <= n; k++) { t = phi - 2 * phi * k / n; pts.push([cx - d - rx * Math.cos(t), Math.max(yCut, cy + ry * Math.sin(t))]); }
+    var cleftEnd = yCut + ry * 0.42;
+    if (c && !g.phone) cleftEnd = Math.max(yCut + 26, Math.min(cleftEnd, c.y - 16));
+    return { pts: pts, cx: cx, yCut: yCut, cleftEnd: cleftEnd };
+  }
   function showBum(R, o) {
-    var t = driftLayout(BD, R, 9);
+    // On phones the outline is small, so keep the words readable and show fewer of them.
+    var shape = buttShape(R), placed = placeOnPath(BD, shape.pts, { start: 24, end: 24, seed: 9, sizes: geo().phone ? [14, 13] : null }), t = placed.targets;
+    placed.rest.forEach(function (w) { w.el.classList.add('hide'); });
+    BD.forEach(function (w) { w.el.classList.remove('drift'); });
+    var gg = geo();
+    cleft.setAttribute('width', gg.W); cleft.setAttribute('height', gg.H);
+    cleft.innerHTML = '<path d="M' + shape.cx + ' ' + (shape.yCut + 4) + ' C ' + (shape.cx - 3) + ' ' + (shape.yCut + (shape.cleftEnd - shape.yCut) * 0.4) + ', ' + (shape.cx + 4) + ' ' + (shape.yCut + (shape.cleftEnd - shape.yCut) * 0.7) + ', ' + (shape.cx + 1) + ' ' + shape.cleftEnd + '" fill="none" stroke="#63291B" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>';
+    cleft.classList.remove('off');
     t.forEach(function (p, i) {
       var w = p[0];
       if (!bumShown && !o.relayout) {
@@ -97,7 +216,7 @@
     });
     bumShown = true;
   }
-  function hideBum() { BD.forEach(function (w) { w.el.classList.add('hide'); }); bumShown = false; }
+  function hideBum() { BD.forEach(function (w) { w.el.classList.add('hide'); }); bumShown = false; cleft.classList.add('off'); }
   var cloudOrder = WD.slice(), driftOrder = WD.slice();
   (function () { var r = seeded(7); cloudOrder.sort(function () { return r() - 0.5; }); var q = seeded(21); driftOrder.sort(function () { return q() - 0.5; }); })();
 
@@ -123,8 +242,11 @@
     opts = opts || {};
     var wasHidden = st.prevWords === 'off' || st.prevWords === 'specks' || st.prevWords === 'point';
     var targets = [];
+    var leftOut = [];
     if (mode === 'drift') {
       targets = driftLayout(driftOrder, R, 3);
+    } else if (mode === 'around') {
+      var ar = aroundLayout(cloudOrder, R, 3); targets = ar.targets; leftOut = ar.rest;
     } else if (mode === 'cloud') {
       var lines, lh, sizes = sizesToTry(), gap = 18, cwid = Math.min(R.w, 640);
       for (var si = 0; si < sizes.length; si++) {
@@ -153,7 +275,7 @@
     }
 
     WD.forEach(function (w) {
-      w.el.classList.toggle('drift', mode === 'drift');
+      w.el.classList.toggle('drift', mode === 'drift' || mode === 'around');
       w.el.classList.toggle('mini', mode === 'row' || mode === 'point' || mode === 'specks');
       w.el.classList.toggle('nolabel', mode === 'row' || mode === 'point' || mode === 'specks' || mode === 'off');
       w.dot.style.background = (mode === 'senses' || mode === 'row' || mode === 'point') ? w.color : '';
@@ -173,6 +295,7 @@
         moveWord(w, t[1], t[2]);
         w.el.classList.remove('hide');
       });
+      leftOut.forEach(function (w) { w.el.classList.add('hide'); });
       if (mode === 'point') {
         clearTimeout(setWords.ht);
         setWords.ht = setTimeout(function () { if (st.prevWords === 'point') WD.forEach(function (w) { w.el.classList.add('hide'); }); }, reduce ? 0 : 950);
@@ -458,22 +581,23 @@
   // ---------- Steps ----------
   var HEADS = { 0: 'preface', 1: 'chapter i · meanings', 2: 'chapter ii · the winners', 3: 'chapter iii · slang', 4: 'afterword', 5: 'colophon' };
   var STEPS = [
-    { ch: 0, copy: function () { return '<p class="lead">People often say that the Inuit have 70 words for snow.</p><p>Contested as this claim may be, it’s meant to convey that languages have more synonyms for things that are pervasive in their culture.</p>'; },
+    { ch: 0, center: true, copy: function () { return '<p class="lead">People often say that the Inuit have 70 words for snow.</p><p>Contested as this claim may be, it’s meant to convey that languages have more synonyms for things that are pervasive in their culture.</p>'; },
       vis: function (R) { Sky.set('flurry', { count: 140 }); setWords('off'); setChart('off'); } },
-    { ch: 0, copy: function () { return '<p class="lead">English has 29 of its own.</p><p>If we set aside snow’s slang meaning.</p>'; },
-      vis: function (R, o) { Sky.set('flurry', { count: 140 }); setWords('drift', R, o); setChart('off'); } },
-    { ch: 0, copy: function () { return '<p class="lead">And 29 is nothing.</p><p>Every speck here is a synonym of one of just 25 everyday English words. There are ' + fmt(HOOK_N) + ' of them.</p>'; },
+    { ch: 0, center: true, copy: function () { return '<p class="lead">English has 29 of its own.</p><p>If we set aside snow’s slang meaning.</p>'; },
+      vis: function (R, o) { Sky.set('flurry', { count: 140 }); setWords('around', R, o); setChart('off'); } },
+    { ch: 0, center: true, copy: function () { return '<p class="lead">And 29 is nothing.</p><p>Every speck here is a synonym of one of just 25 everyday English words. There are ' + fmt(HOOK_N) + ' of them.</p>'; },
       vis: function (R) { var c = copyEl.getBoundingClientRect(); Sky.set('fill', { count: HOOK_N, avoid: { x: c.left, y: c.top, w: c.width, h: c.height } }); setWords('specks'); setChart('off'); } },
     { ch: -1, title: true, copy: function () { return '<p>Snowed Under: which English words have piled up synonyms. By Ryan.</p>'; },
       vis: function () { Sky.set('drop'); setWords('off'); setChart('off'); } },
-    { ch: 1, copy: function () { return '<p class="lead">Let’s look closer at snow’s 29.</p><p><i>Snowfall</i>, sure. But <i>bamboozle</i>? <i>Hornswaggle</i>? Most of them have nothing to do with the weather.</p>'; },
-      vis: function (R, o) { Sky.set('off'); showSenses(false); hideFig2(); setWords('cloud', R, o); setChart('off'); } },
-    { ch: 1, gate: function () { return st.meaningsGuess != null; },
+    { ch: 1, center: true, copy: function () { return '<p class="lead">Let’s look closer at snow’s 29.</p><p><i>Snowfall</i>, sure. But <i>bamboozle</i>? <i>Hornswaggle</i>? Most of them have nothing to do with the weather.</p>'; },
+      vis: function (R, o) { Sky.set('off'); showSenses(false); hideFig2(); setWords('around', R, o); setChart('off'); } },
+    { ch: 1, center: true, gate: function () { return st.meaningsGuess != null; },
       copy: function () {
         var v = st.meaningsGuess || 1, locked = st.meaningsGuess != null;
         return '<p class="lead">Words pick up synonyms one meaning at a time.</p><p>So how many different meanings does <i>snow</i> have, not counting slang?</p>' +
           '<div class="guess"><output class="gnum">' + v + '</output><input type="range" min="1" max="10" step="1" value="' + v + '" aria-label="Your guess: number of meanings"' + (locked ? ' disabled' : '') + '><div class="ends"><span>1 meaning</span><span>10 meanings</span></div>' +
-          '<button type="button" class="btn solid lock"' + (locked ? ' disabled' : '') + '>' + (locked ? 'Locked in' : 'Lock it in') + '</button></div>';
+          '<button type="button" class="btn solid lock"' + (locked ? ' disabled' : '') + '>' + (locked ? 'Locked in' : 'Lock it in') + '</button>' +
+          (locked ? '' : '<p class="kbd-hint">You can also type a number.</p>') + '</div>';
       },
       bind: function () {
         var range = copyEl.querySelector('input'), out = copyEl.querySelector('.gnum'), lock = copyEl.querySelector('.lock');
@@ -484,23 +608,23 @@
         });
       },
       vis: function (R) { Sky.set('off'); showSenses(false); hideFig2(); setWords('off'); setChart('off'); } },
-    { ch: 1, copy: function () {
+    { ch: 1, vw: 560, copy: function () {
         var g = st.meaningsGuess, n = '';
         if (g === 4) n = '<p class="note">your guess: <b>4</b>. Spot on!</p>';
         else if (g != null) n = '<p class="note">your guess: <s>' + g + '</s> <b>4</b></p>';
         return '<p class="lead">Just 4.</p><p>A fall of snow, coming down thickly, TV static, and a <i>snow job</i>. That last one, fooling someone, brings 18 of the 29 synonyms on its own.</p>' + n;
       },
       vis: function (R, o) { Sky.set('off'); hideFig2(); showSenses(true); setWords('senses', R, o); setChart('off'); } },
-    { ch: 1, copy: function () { return '<p class="lead">More meanings, more synonyms.</p><p><i>Man</i> has 9 meanings, from a person to a game piece to crewing a ship. Between them, they hold 306 synonyms.</p>'; },
+    { ch: 1, vw: 460, copy: function () { return '<p class="lead">More meanings, more synonyms.</p><p><i>Man</i> has 9 meanings, from a person to a game piece to crewing a ship. Between them, they hold 306 synonyms.</p>'; },
       vis: function (R) { showSenses(false); showFig2(R); setChart('off'); } },
-    { ch: 1, copy: function () { return '<p class="lead">Snow isn’t anywhere near the top.</p><p>Here it is with the 25 English words that have the most synonyms.</p>'; },
+    { ch: 1, vw: 620, copy: function () { return '<p class="lead">Snow isn’t anywhere near the top.</p><p>Here it is with the 25 English words that have the most synonyms.</p>'; },
       vis: function (R) {
         Sky.set('off'); showSenses(false); hideFig2();
         setChart('scatter', R);
         var p = WP.snow.el.style.transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px/);
         setWords('point', R, { x: p ? +p[1] : R.x, y: p ? +p[2] : R.y + R.h });
       } },
-    { ch: 2, copy: function () {
+    { ch: 2, vw: 600, copy: function () {
         var n = foundCount();
         return '<p class="lead">So which word has the most synonyms?</p><p>Guess as many times as you like. Any word you get from the top 25 goes on the list.</p>' +
           '<form class="wguess" autocomplete="off"><input type="text" placeholder="type a word" aria-label="Your guess" autocapitalize="none" spellcheck="false" enterkeyhint="go"><button class="btn solid" type="submit">Guess</button></form>' +
@@ -528,7 +652,7 @@
         D.top.forEach(function (d, i) { if (st.found[d.w]) fillSlot(i, false); });
         layoutSlots(R); slots.classList.remove('off');
       } },
-    { ch: 2, copy: function () {
+    { ch: 2, vw: 640, copy: function () {
         var n = foundCount(), f = n === 25 ? ' You found all 25!' : n ? ' You found ' + n + ' of them.' : '';
         return '<p class="lead"><i>Cut</i> takes it, with 1,262.</p><p><i>Set</i>, <i>turn</i>, <i>run</i> and <i>break</i> round out the top five.' + f + '</p>';
       },
@@ -541,11 +665,11 @@
           setTimeout(function () { if (st.i === 10) setChart('bars', vizRect(), opts); }, 60);
         } else setChart('bars', R, opts);
       } },
-    { ch: 2, copy: function () { return '<p class="lead">The winners are short and busy.</p><p>22 of the 25 have just one syllable, and they average about ' + Math.round(AVG_M) + ' meanings each. Snow has 4.</p>'; },
+    { ch: 2, vw: 680, copy: function () { return '<p class="lead">The winners are short and busy.</p><p>22 of the 25 have just one syllable, and they average about ' + Math.round(AVG_M) + ' meanings each. Snow has 4.</p>'; },
       vis: function (R) { Sky.set('off'); setWords('off'); slots.classList.add('off'); setChart('bars', R, { list: D.top, max: 1262, found: st.found, meanings: true, caption: 'Fig. 4. The 25 English words with the most synonyms, with their meanings' }); } },
-    { ch: 3, copy: function () { return '<p class="lead">Now let slang in.</p><p><i>Snow</i> is also slang for cocaine, which has 96 slang names of its own, from <i>devil’s dandruff</i> to <i>Bolivian marching powder</i>. Count them, and snow goes from 29 synonyms to 125.</p>'; },
+    { ch: 3, vw: 640, copy: function () { return '<p class="lead">Now let slang in.</p><p><i>Snow</i> is also slang for cocaine, which has 96 slang names of its own, from <i>devil’s dandruff</i> to <i>Bolivian marching powder</i>. Count them, and snow goes from 29 synonyms to 125.</p>'; },
       vis: function (R) { Sky.set('off'); setWords('off'); slots.classList.add('off'); pairsEl.classList.add('off'); setChart('bars', R, { list: D.top, max: 1262, snow: 125, snowNote: '+96 for cocaine', caption: 'Fig. 4. The top 25 again, and snow with its slang' }); } },
-    { ch: 3, copy: function () { return '<p class="lead">Slang is made to be hard to place.</p><p>Match each slang term to what it means.</p>'; },
+    { ch: 3, vw: 560, copy: function () { return '<p class="lead">Slang is made to be hard to place.</p><p>Match each slang term to what it means.</p>'; },
       vis: function (R) {
         Sky.set('off'); setWords('off'); setChart('bars', R, { list: D.top, max: 1262, snow: 125, dimAll: true });
         if (!pairsEl.firstChild) buildPairs(); else refreshPairs();
@@ -553,13 +677,13 @@
         pairsEl.classList.toggle('compact', R.h < 400);
         pairsEl.classList.remove('off');
       } },
-    { ch: 3, copy: function () { return '<p class="lead">Slang turns the list upside down.</p><p><i>Money</i> leads with 3,342 synonyms, and 15 of the top 25 are new. <i>Cut</i> drops to ninth.</p>'; },
+    { ch: 3, vw: 640, copy: function () { return '<p class="lead">Slang turns the list upside down.</p><p><i>Money</i> leads with 3,342 synonyms, and 15 of the top 25 are new. <i>Cut</i> drops to ninth.</p>'; },
       vis: function (R) { Sky.set('off'); setWords('off'); pairsEl.classList.add('off'); setChart('bars', R, { list: D.slangTop, max: 3342, snow: 125, grow: true, slLabel: true, caption: 'Fig. 5. The top 25 with slang counted. sl. = new with slang' }); } },
-    { ch: 3, copy: function () { return '<p class="lead">Look at what dominates.</p><p>Money, women, drink, fools, men and sex take the top six places. Most of the other new arrivals are about bodies and sex, plus the police, death and madness.</p>'; },
+    { ch: 3, vw: 640, copy: function () { return '<p class="lead">Look at what dominates.</p><p>Money, women, drink, fools, men and sex take the top six places. Most of the other new arrivals are about bodies and sex, plus the police, death and madness.</p>'; },
       vis: function (R) { Sky.set('off'); setWords('off'); pairsEl.classList.add('off'); setChart('bars', R, { list: D.slangTop, max: 3342, snow: 125, slLabel: true, highlight: function (d) { return d.sl; }, caption: 'Fig. 5. The top 25 with slang counted' }); } },
-    { ch: 4, copy: function () { return '<p class="lead">What we have the most words for says something about us.</p><p>We keep inventing new ways to talk about the things we’d rather not say plainly but can’t stop talking about.</p>'; },
+    { ch: 4, vw: 640, copy: function () { return '<p class="lead">What we have the most words for says something about us.</p><p>We keep inventing new ways to talk about the things we’d rather not say plainly but can’t stop talking about.</p>'; },
       vis: function (R) { Sky.set('flurry', { count: 90 }); setWords('off'); pairsEl.classList.add('off'); setChart('bars', R, { list: D.slangTop, max: 3342, snow: 125, dimAll: true }); } },
-    { ch: 4, copy: function () { return '<p class="lead">The better question may be what does a language keep finding new ways to say?</p>'; },
+    { ch: 4, center: 'desktop', copyDy: 30, copy: function () { return '<p class="lead">So, do the Inuit have 70 words for snow?</p><p>It depends on what counts as a word. Inuit languages build words by adding pieces to a root, so one root can grow into dozens of them. The better question may be what does a language keep finding new ways to say? In English, it isn’t snow.</p>'; },
       vis: function (R, o) { Sky.set('flurry', { count: 220 }); setChart('off'); setWords('off'); showBum(R, o); } },
     { ch: 5, copy: function () {
         return '<h2>Colophon</h2><p><i>Snowed Under</i>, by Ryan.</p>' +
@@ -645,7 +769,21 @@
     if (STEPS[st.i].title) { next(); return; }
     if (e.clientX < innerWidth * 0.3) back(); else next();
   });
+  var lastDigit = { k: '', t: 0 };
+  function sliderKey(e) {
+    if (st.i !== 5 || st.meaningsGuess != null) return false;
+    var range = copyEl.querySelector('.guess input'), out = copyEl.querySelector('.gnum');
+    if (!range) return false;
+    if (e.key === 'Enter') { copyEl.querySelector('.lock').click(); return true; }
+    if (!/^[0-9]$/.test(e.key)) return false;
+    var now = Date.now(), v = +e.key;
+    if (e.key === '0') v = 10;                                   // "0", or "1" then "0", means 10
+    lastDigit = { k: e.key, t: now };
+    range.value = v; out.textContent = v;
+    return true;
+  }
   document.addEventListener('keydown', function (e) {
+    if (sliderKey(e)) { e.preventDefault(); return; }
     if (e.target.closest && e.target.closest('input, textarea')) return;
     if (e.target.closest && e.target.closest('button, a') && (e.key === ' ' || e.key === 'Enter')) return;
     if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); next(); }
